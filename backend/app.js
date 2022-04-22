@@ -11,7 +11,8 @@ const bodyParser = require('body-parser');
 
 const path = require('path');
 
-//Import des routes
+//Import des routes des sauces
+
 
 const sauceRoutes = require ('../backend/routes/sauces');
 const userRoutes = require ('../backend/routes/user');

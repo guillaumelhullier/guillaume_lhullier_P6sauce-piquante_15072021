@@ -25,88 +25,7 @@ exports.createSauces = (req, res, next) => {
     sauce.save()
       .then(() => res.status(201).json({ message: 'Sauce enregistrée !'}))
       .catch(error => res.status(400).json({ error }));
-};
-  
-// Controllers pour liker ou disliker une sauce
-exports.likeSauces = (req, res, next) => {
-
-  const choice = {
-    LIKE: 1,
-    DISLIKE: -1,
-    RESET: 0,
-  }
-  const sauceId = req.params.id;
-  const { userId, like: userChoice } = req.body;
-
-  if (!(Number.isInteger(userChoice) && (userChoice >= -1 && userChoice <= 1))) {
-    console.log('error ');
-    return null
-  }
-
-  Sauce.findOne({ _id: req.params.id })
-    .then(sauce => {
-      // Condition si la sauce n'est plus aimée ou n'est plus dislikée
-      if (userChoice === choice.RESET) {
-        console.log('reset all likes ')
-        removeUser(userId, sauce.usersLiked);
-        removeUser(userId, sauce.usersDisliked);
-      }
-    // Condition si la sauce est likée
-      if (userChoice === choice.LIKE) {
-        console.log('user liked the sauce ');
-        if (sauce.usersLiked.find(u => u === userId)) {
-          console.log('user already voted ‍');
-          return 'you have déjà voté !';
-        }
-        sauce['usersLiked'].push(userId);
-        sauce['likes'] = sauce['usersLiked'].length;
-
-        if (sauce.usersDisliked.find(u => u === userId)) {
-          removeUser(userId, sauce.userDislikes);
-        }
-      }
-      // Condition si la sauce est dislikée
-      if (userChoice === choice.DISLIKE) {
-        console.log('user hate the sauce ');
-        if (sauce.usersDisliked.find(u => u === userId)) {
-          console.log('user already voted ‍');
-          return 'you have déjà voté !';
-        }
-        sauce['usersDisliked'].push(userId);
-        sauce['dislikes'] = sauce['usersDisliked'].length;
-
-        if (sauce.usersLiked.find(u => u === userId)) {
-          removeUser(userId, sauce.usersLiked);
-        }
-      }
-
-      sauce.likes = sauce.usersLiked.length;
-      sauce.dislikes = sauce.usersDisliked.length;
-
-      //console.log(sauce)
-      const { usersLiked, usersDisliked, likes, dislikes } = sauce;
-      const fields = {
-        usersLiked, usersDisliked, likes, dislikes
-      }
-
-      // Met a jour la base de données avec le nouveau statut
-      Sauce.findByIdAndUpdate(sauceId, fields, { new: true })
-        .then(sauceLike => {
-          res.status(200).json({ message: 'Statut mis a jour !', sauceLike })
-        })
-        .catch(error => res.status(500).json({ error }))
-    })
-    .catch(error => res.status(500).json({ error }));
-}
-
-const removeUser = (userId, likesTab) => {
-  const index = likesTab.indexOf(userId);
-  if (index > -1) {
-    likesTab.splice(index, 1);
-  }
-
-  return likesTab;
-}  
+}; 
 
 // Controllers pour modifier une sauce
 exports.modifySauces = (req, res, next) => {
@@ -150,3 +69,69 @@ exports.getAllSauces = (req, res, next) => {
       .then(sauce => res.status(200).json(sauce))
       .catch(error => res.status(400).json({ error }));
 }
+
+
+//**
+// * LIKE / DISLIKE
+// */
+exports.likeSauces = (req, res, next) => {
+    const userId = req.body.userId;
+    const like = req.body.like;
+    const sauceId = req.params.id;
+    console.log(req)
+    Sauce.findOne({ _id: sauceId })
+        .then(sauce => {
+            console.log(sauce)
+                // new values
+            const newValues = {
+                usersLiked: sauce.usersLiked,
+                usersDisliked: sauce.usersDisliked,
+                likes: 0,
+                dislikes: 0
+            }
+
+
+            // Switch case:
+            switch (like) {
+                case 1: // case: sauce's liked
+                    newValues.usersLiked.push(userId);
+                    break;
+                case -1: // case: sauce's disliked
+                    newValues.usersDisliked.push(userId);
+                    break;
+                case 0: // case: canceling like/dislike
+                    if (newValues.usersLiked.includes(userId)) {
+                        // if like's canceled
+                        const index = newValues.usersLiked.indexOf(userId);
+                        newValues.usersLiked.splice(index, 1);
+                    } else {
+                        // if dislike's canceled
+                        const index = newValues.usersDisliked.indexOf(userId);
+                        newValues.usersDisliked.splice(index, 1);
+                    }
+                    break;
+            };
+            // Calculating likes / dislikes
+            newValues.likes = newValues.usersLiked.length;
+            newValues.dislikes = newValues.usersDisliked.length;
+            // updating sauce new values
+            Sauce.updateOne({ _id: sauceId }, newValues)
+                .then(() => res.status(200).json({ message: 'Sauce notée !' }))
+                .catch(error => res.status(400).json({ error }))
+        })
+        .catch(error => res.status(500).json({ error }));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+       

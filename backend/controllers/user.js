@@ -1,5 +1,4 @@
 const User = require ('../models/user');
-const CryptoJs = require('cryptojs');
 
 //Import du package de codage
 const bcrypt = require ('bcrypt');
@@ -12,7 +11,7 @@ exports.signup = (req, res, next) => {
     bcrypt.hash(req.body.password, 10)
       .then(hash => {
         const user = new User({
-          email: CryptoJs.SHA256(req.body.email),
+          email: (req.body.email),
           password: hash
         });
         user.save()
@@ -48,3 +47,5 @@ exports.signup = (req, res, next) => {
       })
       .catch(error => res.status(500).json({ error }));
   };
+  //Demain
+  
